@@ -74,8 +74,8 @@ export default function Portfolio() {
             {positions.length === 0 ? (
               <div className="py-6 text-xs text-cream-faint text-center">No active positions yet.</div>
             ) : (
-              positions.map((p) => (
-                <div key={p.market} className="flex items-center justify-between py-3.5 text-sm">
+              positions.map((p, idx) => (
+                <div key={p.id || `${p.market}-${idx}`} className="flex items-center justify-between py-3.5 text-sm">
                   <span className="truncate pr-3 flex-1">{p.market}</span>
                   <span className={`font-mono text-xs px-2 py-0.5 rounded-full border mr-3 ${p.side === "YES" ? "border-yes/40 text-yes" : "border-no/40 text-no"}`}>{p.side}</span>
                   <span className={`font-mono flex items-center gap-1 ${p.pnl >= 0 ? "text-yes" : "text-no"}`}>

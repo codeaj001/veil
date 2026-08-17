@@ -38,7 +38,7 @@ export default function ProofModal({ open, onClose, side, amount, market, potent
         }
         if (next === 100) {
           clearInterval(iv);
-          submitPrivateBet(marketId || "btc-150k", side, amount).catch(console.error);
+          submitPrivateBet(marketId || "btc-150k", side, amount, market).catch(console.error);
           setTimeout(() => setStage("done"), 400);
         }
         return next;

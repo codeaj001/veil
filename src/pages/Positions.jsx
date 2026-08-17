@@ -48,16 +48,22 @@ export default function Positions() {
         <div className="hidden sm:grid grid-cols-5 gap-4 px-5 py-3 text-[11px] font-mono text-cream-faint uppercase tracking-wider">
           <span className="col-span-2">Market</span><span>Side</span><span>Entry</span><span className="text-right">P&L</span>
         </div>
-        {positions.map((p) => (
-          <div key={p.market} className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 px-5 py-4 text-sm items-center">
-            <span className="col-span-2 truncate">{p.market}</span>
-            <span className={`font-mono text-xs px-2 py-0.5 rounded-full border w-fit ${p.side === "YES" ? "border-yes/40 text-yes" : "border-no/40 text-no"}`}>{p.side}</span>
-            <span className="font-mono text-cream-faint blur-lock">$••.••</span>
-            <span className={`font-mono flex items-center gap-1 justify-end ${p.pnl >= 0 ? "text-yes" : "text-no"}`}>
-              {p.pnl >= 0 ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />} {fmtSigned(p.pnl)}
-            </span>
+        {positions.length === 0 ? (
+          <div className="p-8 text-center text-cream-faint text-sm">
+            No active positions found. Predict on any live market to record your private ZK position!
           </div>
-        ))}
+        ) : (
+          positions.map((p, idx) => (
+            <div key={p.id || `${p.market}-${idx}`} className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 px-5 py-4 text-sm items-center">
+              <span className="col-span-2 truncate">{p.market}</span>
+              <span className={`font-mono text-xs px-2 py-0.5 rounded-full border w-fit ${p.side === "YES" ? "border-yes/40 text-yes" : "border-no/40 text-no"}`}>{p.side}</span>
+              <span className="font-mono text-cream-faint blur-lock">{p.amount ? `${p.amount} tDUST` : "$••.••"}</span>
+              <span className={`font-mono flex items-center gap-1 justify-end ${p.pnl >= 0 ? "text-yes" : "text-no"}`}>
+                {p.pnl >= 0 ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />} {fmtSigned(p.pnl)}
+              </span>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
