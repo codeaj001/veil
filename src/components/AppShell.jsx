@@ -63,10 +63,20 @@ export default function AppShell() {
   useEffect(() => {
     const active = isSessionValid();
     setAuthenticated(active);
-    if (active) {
+
+    const path = location.pathname;
+    const isPublic = 
+      path === "/privacy" ||
+      path === "/leaderboard" ||
+      path === "/markets" ||
+      (path.startsWith("/markets/") && !path.endsWith("/resolve"));
+
+    if (!active && !isPublic) {
+      navigate("/login", { replace: true });
+    } else if (active) {
       fetchWallet().then(setWallet).catch(console.error);
     }
-  }, [location.pathname]);
+  }, [location.pathname, navigate]);
 
   const formatAddr = (addr) => {
     if (!addr) return null;
