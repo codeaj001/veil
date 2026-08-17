@@ -128,14 +128,67 @@ export async function createMarket(marketData) {
 }
 
 export async function fetchMarketById(id) {
+  // 1. Look in cached markets / fetchMarkets list (~0ms)
+  try {
+    const markets = await fetchMarkets();
+    const found = markets.find(m => String(m.id) === String(id));
+    if (found) {
+      const yesVal = found.yes !== undefined ? found.yes : Math.round((found.yesPrice || 0.5) * 100);
+      return {
+        ...found,
+        yes: yesVal,
+        volume: found.rawVolume || found.volume || 150000,
+        liquidity: found.liquidity || 45000,
+        traders: found.traders || 1280,
+        endsInDays: found.endsInDays || 14,
+        change24h: found.change24h || 2.4,
+        history: found.history || [45, 48, 47, 52, 50, 54, yesVal]
+      };
+    }
+  } catch (e) {
+    console.warn('[VEIL API] Market lookup notice:', e.message);
+  }
+
+  // 2. Query Supabase directly by ID (~20ms)
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data: m, error } = await supabase
+        .from('markets')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (!error && m) {
+        const yesPct = Math.round((parseFloat(m.yes_price) || 0.5) * 100);
+        return {
+          id: m.id,
+          question: m.question,
+          category: m.category || 'General',
+          yes: yesPct,
+          volume: parseFloat(m.volume) || 150000,
+          liquidity: 45000,
+          traders: 1280,
+          endsInDays: 14,
+          change24h: 2.4,
+          history: [45, 48, 47, 52, 50, 54, yesPct],
+          source: m.source || 'Polymarket',
+          polymarketUrl: m.polymarket_url || 'https://polymarket.com'
+        };
+      }
+    } catch (err) {
+      console.warn('[VEIL API] Supabase market query notice:', err.message);
+    }
+  }
+
+  // 3. Fallback to Local Backend Endpoint
   try {
     const res = await fetch(`${API_BASE}/markets/${id}`);
-    if (!res.ok) throw new Error('Failed to fetch market detail');
-    return await res.json();
+    if (res.ok) return await res.json();
   } catch (e) {
-    console.error(`[VEIL API] Error fetching market ${id}:`, e.message);
-    return null;
+    // Ignore backend connection error on Vercel deployment
   }
+
+  return null;
 }
 
 export async function fetchProofs() {
