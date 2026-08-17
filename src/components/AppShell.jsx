@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
   LayoutGrid, Flame, Timer, Sparkles, Eye, Compass, BrainCircuit, Trophy,
@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import Logo from "./Logo";
 import { fetchWallet } from "../lib/api";
-import { clearSession } from "../lib/authSession";
+import { clearSession, isSessionValid } from "../lib/authSession";
 
 const mainNav = [{ to: "/app", label: "Home", icon: Home, end: true }];
 const marketsNav = [
@@ -56,14 +56,20 @@ export default function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
   const [wallet, setWallet] = useState(null);
+  const [authenticated, setAuthenticated] = useState(isSessionValid());
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    fetchWallet().then(setWallet).catch(console.error);
-  }, []);
+    const active = isSessionValid();
+    setAuthenticated(active);
+    if (active) {
+      fetchWallet().then(setWallet).catch(console.error);
+    }
+  }, [location.pathname]);
 
   const formatAddr = (addr) => {
-    if (!addr) return "mn_17a3…f91";
+    if (!addr) return null;
     if (addr.length > 12) return `${addr.slice(0, 7)}…${addr.slice(-4)}`;
     return addr;
   };
@@ -130,81 +136,103 @@ export default function AppShell() {
               </div>
             </div>
 
-            <button className="relative text-cream-faint hover:text-cream" onClick={() => navigate("/notifications")}>
-              <Bell size={19} />
-              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-volt" />
-            </button>
+            {authenticated ? (
+              <>
+                <button className="relative text-cream-faint hover:text-cream" onClick={() => navigate("/notifications")}>
+                  <Bell size={19} />
+                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-volt" />
+                </button>
 
-            {/* Wallet Address Button with Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setWalletMenuOpen(!walletMenuOpen)}
-                className="hidden sm:flex items-center gap-1.5 btn-primary text-xs px-4 py-2"
-              >
-                <span className="font-mono">{formatAddr(wallet?.unshieldedAddress || wallet?.address)}</span>
-                <ChevronDown size={14} className={`transition-transform ${walletMenuOpen ? "rotate-180" : ""}`} />
-              </button>
+                {/* Wallet Address Button with Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setWalletMenuOpen(!walletMenuOpen)}
+                    className="hidden sm:flex items-center gap-1.5 btn-primary text-xs px-4 py-2"
+                  >
+                    <span className="font-mono">{formatAddr(wallet?.unshieldedAddress || wallet?.address) || "mn_wallet"}</span>
+                    <ChevronDown size={14} className={`transition-transform ${walletMenuOpen ? "rotate-180" : ""}`} />
+                  </button>
 
-              {walletMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setWalletMenuOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-64 bg-ink-900 border hairline rounded-2xl shadow-2xl z-50 p-3 fade-up">
-                    <div className="px-3 py-2 border-b hairline mb-2">
-                      <p className="text-[10px] font-mono tracking-widest text-cream-faint uppercase">Connected Account</p>
-                      <p className="text-sm font-semibold text-cream truncate">
-                        {localStorage.getItem("veil_user_email") || wallet?.email || "trader@veil.app"}
-                      </p>
-                      <div className="flex items-center justify-between mt-1.5 bg-ink-850 px-2.5 py-1.5 rounded-lg border hairline">
-                        <span className="text-[11px] font-mono text-cream-faint truncate max-w-[140px]">
-                          {wallet?.unshieldedAddress || "mn_17a3f9…c2"}
-                        </span>
-                        <span className="text-[10px] text-volt-glow font-mono font-bold">PREPROD</span>
+                  {walletMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setWalletMenuOpen(false)} />
+                      <div className="absolute right-0 mt-2 w-64 bg-ink-900 border hairline rounded-2xl shadow-2xl z-50 p-3 fade-up">
+                        <div className="px-3 py-2 border-b hairline mb-2">
+                          <p className="text-[10px] font-mono tracking-widest text-cream-faint uppercase">Connected Account</p>
+                          <p className="text-sm font-semibold text-cream truncate">
+                            {localStorage.getItem("veil_user_email") || wallet?.email || "trader@veil.app"}
+                          </p>
+                          <div className="flex items-center justify-between mt-1.5 bg-ink-850 px-2.5 py-1.5 rounded-lg border hairline">
+                            <span className="text-[11px] font-mono text-cream-faint truncate max-w-[140px]">
+                              {wallet?.unshieldedAddress || "mn_17a3f9…c2"}
+                            </span>
+                            <span className="text-[10px] text-volt-glow font-mono font-bold">PREPROD</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <button
+                            onClick={() => { setWalletMenuOpen(false); navigate("/wallet"); }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-cream-faint hover:text-cream hover:bg-cream/5 transition-colors"
+                          >
+                            <Wallet2 size={15} /> Wallet & Balances
+                          </button>
+
+                          <button
+                            onClick={() => { setWalletMenuOpen(false); navigate("/forecaster/trader"); }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-cream-faint hover:text-cream hover:bg-cream/5 transition-colors"
+                          >
+                            <User size={15} /> Forecaster Profile
+                          </button>
+
+                          <button
+                            onClick={() => { setWalletMenuOpen(false); navigate("/settings"); }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-cream-faint hover:text-cream hover:bg-cream/5 transition-colors"
+                          >
+                            <SettingsIcon size={15} /> Settings
+                          </button>
+                        </div>
+
+                        <div className="border-t hairline mt-2 pt-2">
+                          <button
+                            onClick={async () => {
+                              setWalletMenuOpen(false);
+                              await clearSession();
+                              setAuthenticated(false);
+                              navigate("/login");
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-no hover:bg-no/10 border border-no/20 transition-colors"
+                          >
+                            <LogOut size={15} /> Log Out
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    </>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate("/login")}
+                  className="text-xs text-cream-faint hover:text-cream px-3 py-2 transition-colors"
+                >
+                  Sign in
+                </button>
+                <button
+                  onClick={() => navigate("/onboarding")}
+                  className="btn-primary text-xs px-4 py-2"
+                >
+                  Create Account
+                </button>
+              </div>
+            )}
 
-                    <div className="space-y-1">
-                      <button
-                        onClick={() => { setWalletMenuOpen(false); navigate("/wallet"); }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-cream-faint hover:text-cream hover:bg-cream/5 transition-colors"
-                      >
-                        <Wallet2 size={15} /> Wallet & Balances
-                      </button>
-
-                      <button
-                        onClick={() => { setWalletMenuOpen(false); navigate("/forecaster/trader"); }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-cream-faint hover:text-cream hover:bg-cream/5 transition-colors"
-                      >
-                        <User size={15} /> Forecaster Profile
-                      </button>
-
-                      <button
-                        onClick={() => { setWalletMenuOpen(false); navigate("/settings"); }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-cream-faint hover:text-cream hover:bg-cream/5 transition-colors"
-                      >
-                        <SettingsIcon size={15} /> Settings
-                      </button>
-                    </div>
-
-                    <div className="border-t hairline mt-2 pt-2">
-                      <button
-                        onClick={async () => {
-                          setWalletMenuOpen(false);
-                          await clearSession();
-                          navigate("/login");
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-no hover:bg-no/10 border border-no/20 transition-colors"
-                      >
-                        <LogOut size={15} /> Sign Out
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <NavLink to="/portfolio" className="w-8 h-8 rounded-full bg-volt/20 border border-volt/50 flex items-center justify-center text-cream">
-              <User size={15} />
-            </NavLink>
+            {authenticated && (
+              <NavLink to="/portfolio" className="w-8 h-8 rounded-full bg-volt/20 border border-volt/50 flex items-center justify-center text-cream">
+                <User size={15} />
+              </NavLink>
+            )}
           </div>
         </header>
 

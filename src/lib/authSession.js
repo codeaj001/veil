@@ -22,7 +22,10 @@ export function generateUniqueDisplayName(email = '') {
  * Retrieves the current logged in user's profile details.
  */
 export function getUserProfile() {
-  const email = localStorage.getItem('veil_user_email') || 'hello@gmail.com';
+  const email = localStorage.getItem('veil_user_email');
+  if (!email) {
+    return null;
+  }
   let displayName = localStorage.getItem('veil_display_name');
 
   if (!displayName) {
