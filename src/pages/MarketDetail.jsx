@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
-import { Lock, ChevronLeft } from "lucide-react";
+import { Lock, ChevronLeft, LogIn } from "lucide-react";
 import StatusDot from "../components/StatusDot";
 import ProofModal from "../components/ProofModal";
 import { fmtFull } from "../lib/utils";
 import { fetchMarketById, claimPayout } from "../lib/api";
+import { isSessionValid } from "../lib/authSession";
 
 const timeFilters = ["1H", "6H", "1D", "1W", "1M", "ALL"];
 
 export default function MarketDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [market, setMarket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [side, setSide] = useState("YES");
@@ -182,6 +184,10 @@ export default function MarketDetail() {
                 <div className="font-display font-bold text-xl mb-3">Winning Outcome: <span className="text-yes">{activeMarket.winningOutcome || "YES"}</span></div>
                 <button
                   onClick={async () => {
+                    if (!isSessionValid()) {
+                      navigate("/login");
+                      return;
+                    }
                     try {
                       const res = await claimPayout(activeMarket.id);
                       alert(`Successfully claimed ${res.payout} tDUST payout!`);
@@ -195,9 +201,13 @@ export default function MarketDetail() {
                   Claim Winnings (ZK Proof)
                 </button>
               </div>
-            ) : (
+            ) : isSessionValid() ? (
               <button onClick={() => setModalOpen(true)} className="btn-primary w-full py-3.5 text-sm">
                 Confirm Prediction
+              </button>
+            ) : (
+              <button onClick={() => navigate("/login")} className="btn-primary w-full py-3.5 text-sm flex items-center justify-center gap-2">
+                <LogIn size={16} /> Sign in to Predict
               </button>
             )}
           </div>

@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { X, Lock, ShieldCheck, Loader2 } from "lucide-react";
+import { submitPrivateBet } from "../lib/api";
+import { isSessionValid } from "../lib/authSession";
 
 const steps = [
   "Funds verified",
@@ -8,12 +11,18 @@ const steps = [
   "Proof generated",
 ];
 
-import { submitPrivateBet } from "../lib/api";
-
 export default function ProofModal({ open, onClose, side, amount, market, potentialReturn, marketId }) {
   const [stage, setStage] = useState("confirm"); // confirm -> generating -> done
   const [progress, setProgress] = useState(0);
   const [doneSteps, setDoneSteps] = useState(0);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (open && !isSessionValid()) {
+      onClose();
+      navigate("/login");
+    }
+  }, [open, navigate, onClose]);
 
   useEffect(() => {
     if (!open) { setStage("confirm"); setProgress(0); setDoneSteps(0); }
